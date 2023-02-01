@@ -3,8 +3,9 @@ import {createStackNavigator} from '@react-navigation/stack';
 import React from 'react';
 import {isReadyRef, navigationRef} from './navigation/Navigation';
 import Routes from './navigation/Routes';
-import {NewsScreen} from './screens/NewsScreen';
-import {WelcomeScreen} from './screens/WelcomeScreen';
+import NewsScreen from './screens/NewsScreen';
+import WelcomeScreen from './screens/WelcomeScreen';
+import FavoritesScreen from './screens/FavoritesScreen';
 
 const Stack = createStackNavigator();
 
@@ -24,6 +25,11 @@ const Root = () => {
         <Stack.Screen
           name={Routes.newsScreen}
           component={NewsScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.favoritesScreen}
+          component={FavoritesScreen}
           options={{headerShown: false}}
         />
       </Stack.Navigator>

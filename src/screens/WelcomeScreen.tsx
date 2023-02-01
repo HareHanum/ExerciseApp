@@ -1,10 +1,20 @@
-import React from 'react';
-import {FlatList, ListRenderItem, StyleSheet} from 'react-native';
+import React, {useEffect} from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  ListRenderItem,
+  StyleSheet,
+  View,
+} from 'react-native';
+import {AccessToken, LoginManager} from 'react-native-fbsdk';
 import {Button, Card} from 'react-native-paper';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {connect, useDispatch, useSelector} from 'react-redux';
 import categoriesImages from '../assets/categoriesImages';
 import {navigate} from '../navigation/Navigation';
 import Routes from '../navigation/Routes';
+import {fetchNews} from '../store/auth/actions';
 import colors from '../util/colors';
 import {welcomeScreenStrings} from '../util/strings';
 
@@ -12,7 +22,15 @@ interface Category {
   name: string;
   image: string;
 }
+
 const WelcomeScreen = () => {
+  const dispatch = useDispatch();
+  const {pending} = useSelector((state: any) => state.news);
+
+  useEffect(() => {
+    dispatch(fetchNews());
+  }, [dispatch]);
+
   const categories: Category[] = [
     {name: welcomeScreenStrings.general, image: categoriesImages.general},
     {name: welcomeScreenStrings.business, image: categoriesImages.business},
@@ -27,7 +45,7 @@ const WelcomeScreen = () => {
   ];
 
   const onCategorySelected = (category: Category) => {
-    navigate(Routes.newsScreen, {category: category.name});
+    navigate(Routes.newsScreen, {category: category.name.toLowerCase()});
   };
 
   const renderItem: ListRenderItem<Category> = ({item}) => {
@@ -49,9 +67,32 @@ const WelcomeScreen = () => {
         style={styles.button}
         icon={require('../assets/heart.png')}
         mode="contained"
-        onPress={() => console.log('Pressed')}>
+        onPress={() => loginWithFacebook()}>
         {welcomeScreenStrings.favorites}
       </Button>
+    );
+  };
+
+  const loginWithFacebook = () => {
+    // Attempt a login using the Facebook login dialog asking for default permissions.
+    LoginManager.logInWithPermissions(['public_profile']).then(
+      (login: any) => {
+        if (login.isCancelled) {
+          console.log('Login cancelled');
+        } else {
+          AccessToken.getCurrentAccessToken().then((data: any) => {
+            const accessToken = data.accessToken.toString();
+            if (accessToken) {
+              navigate(Routes.favoritesScreen);
+            } else {
+              Alert.alert(welcomeScreenStrings.facebookLoginFailed);
+            }
+          });
+        }
+      },
+      (error: any) => {
+        console.log('Login fail with error: ' + error);
+      },
     );
   };
 
@@ -62,6 +103,11 @@ const WelcomeScreen = () => {
         renderItem={renderItem}
         data={categories}
       />
+      {pending ? (
+        <View style={[styles.loadingView]}>
+          <ActivityIndicator color={colors.blue} size={24} />
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 };
@@ -71,8 +117,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.white,
   },
+  loadingView: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    right: 0,
+    left: 0,
+    backgroundColor: colors.loadingBG,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   button: {marginHorizontal: 16, marginVertical: 24},
   card: {margin: 16},
 });
 
-export {WelcomeScreen};
+export default connect()(WelcomeScreen);
